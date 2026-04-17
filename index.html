@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>徒歩巡回ルート最適化アプリ</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app-layout">
+    <aside class="sidebar" aria-label="ルート設定パネル">
+      <header class="sidebar-header">
+        <h1>徒歩巡回ルート最適化</h1>
+        <p>地図クリックまたは地点検索で経由地を追加できます。</p>
+      </header>
+
+      <section class="search-section" aria-label="地点検索">
+        <label for="place-input" class="input-label">地点検索</label>
+        <input
+          id="place-input"
+          class="place-input"
+          type="text"
+          placeholder="地点名で検索して追加"
+          autocomplete="off"
+        />
+        <p class="input-help">候補を選択すると地点が追加されます。</p>
+      </section>
+
+      <section class="endpoint-section" aria-label="スタート・ゴール設定">
+        <h2>スタート / ゴール（任意）</h2>
+        <div class="endpoint-row">
+          <label for="start-select" class="input-label">スタート地点</label>
+          <select id="start-select" class="endpoint-select"></select>
+        </div>
+        <div class="endpoint-row">
+          <label for="goal-select" class="input-label">ゴール地点</label>
+          <select id="goal-select" class="endpoint-select"></select>
+        </div>
+        <p class="input-help">
+          未指定時は、先頭地点から出発して同地点へ戻る巡回になります。
+        </p>
+      </section>
+
+      <section class="waypoint-section" aria-label="追加した地点">
+        <div class="section-title-row">
+          <h2>追加した地点</h2>
+          <span id="waypoint-count" class="waypoint-count">0件</span>
+        </div>
+        <ul id="waypoint-list" class="waypoint-list"></ul>
+      </section>
+
+      <section class="action-section">
+        <button id="calculate-route-button" class="primary-button" type="button">
+          最短ルートを計算
+        </button>
+      </section>
+
+      <section class="result-section" aria-label="ルート結果">
+        <h2>ルート結果</h2>
+        <p class="result-help">
+          計算後、各区間を「徒歩 / 電車（公共交通）」で切り替えできます。
+        </p>
+        <div id="route-results" class="route-results"></div>
+      </section>
+    </aside>
+
+    <section class="map-section" aria-label="地図表示">
+      <div id="map"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
