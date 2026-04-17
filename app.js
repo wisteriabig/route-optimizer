@@ -1099,6 +1099,10 @@ async function requestTransitSegmentMetrics(from, to) {
     origin: from.latLng,
     destination: to.latLng,
     travelMode: google.maps.TravelMode.TRANSIT,
+    // Transit requests often need a departureTime to find available schedules
+    transitOptions: {
+      departureTime: new Date(),
+    },
   };
 
   const result = await runDirectionsRequest(request);
