@@ -1,4 +1,4 @@
-const GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBhTnkxanjhu11B6zGEzZRMU94eVEwf_oI'; // GitHub Pages 公開時は実キーへ置き換え
 
 let map = null;
 let directionsService = null;
@@ -49,54 +49,53 @@ const DIRECTIONS_ERROR_MESSAGES = Object.freeze({
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  void setupApp();
+  setupApp();
 });
 
 /**
  * アプリ全体を初期化する
- * @returns {Promise<void>} 初期化完了Promise
  */
-async function setupApp() {
+function setupApp() {
   ui = getUiElements();
   renderWaypointList();
   renderEmptyRouteResult();
-
-  const apiKey = await resolveGoogleMapsApiKey();
-  if (!isApiKeyReady(apiKey)) {
-    alert('APIキーを設定してください。app.js の GOOGLE_MAPS_API_KEY を編集するか、window.GOOGLE_MAPS_API_KEY を設定してください。.env 自動読込は HTTP 配信時のみ有効です。');
-    console.error('APIキー未設定のため初期化を中断しました。', {
-      configuredKey: GOOGLE_MAPS_API_KEY,
-      runtimeKeyExists: Boolean(window.GOOGLE_MAPS_API_KEY),
-    });
-    return;
-  }
 
   if (!uiEventsBound) {
     bindUiEvents();
     uiEventsBound = true;
   }
 
-  window.initMap = initMap;
-  loadGoogleMapsApi(apiKey);
-}
-
-/**
- * 実行時APIキーを設定してアプリ初期化を再実行する
- * @param {string} runtimeApiKey - 実行時に与えるAPIキー
- */
-function startAppWithRuntimeKey(runtimeApiKey) {
-  if (typeof runtimeApiKey !== 'string' || runtimeApiKey.trim() === '') {
-    alert('有効なAPIキー文字列を指定してください。');
-    console.error('startAppWithRuntimeKey: invalid key');
+  if (isPlaceholderApiKey(GOOGLE_MAPS_API_KEY)) {
+    renderApiKeyConfigurationHint();
+    console.error('Google Maps APIキーが未設定です。app.js の GOOGLE_MAPS_API_KEY を実キーへ置き換えてください。');
     return;
   }
 
-  window.GOOGLE_MAPS_API_KEY = runtimeApiKey.trim();
-  console.info('実行時APIキーを設定して再初期化します。');
-  void setupApp();
+  window.initMap = initMap;
+  loadGoogleMapsApi(GOOGLE_MAPS_API_KEY);
 }
 
-window.startAppWithRuntimeKey = startAppWithRuntimeKey;
+/**
+ * プレースホルダーキーかどうかを判定する
+ * @param {string} apiKey - 判定対象のキー
+ * @returns {boolean} プレースホルダーならtrue
+ */
+function isPlaceholderApiKey(apiKey) {
+  return typeof apiKey !== 'string' || apiKey.trim() === '' || apiKey === 'YOUR_API_KEY';
+}
+
+/**
+ * APIキー未設定時の案内を結果エリアに表示する
+ */
+function renderApiKeyConfigurationHint() {
+  ui.routeResults.textContent = '';
+
+  const message = document.createElement('p');
+  message.className = 'empty-message';
+  message.textContent = 'Google Maps APIキーが未設定です。app.js の GOOGLE_MAPS_API_KEY を実キーへ置き換えて再読み込みしてください。';
+
+  ui.routeResults.appendChild(message);
+}
 
 /**
  * UI要素を取得して返す
@@ -165,91 +164,6 @@ function parseWaypointSelectValue(value, autoValue) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-/**
- * 利用可能なAPIキーを解決する
- * @returns {Promise<string>} 利用するAPIキー
- */
-async function resolveGoogleMapsApiKey() {
-  const candidates = [
-    window.GOOGLE_MAPS_API_KEY,
-    window.__ENV__ && window.__ENV__.GOOGLE_MAPS_API_KEY,
-    window.__RUNTIME_CONFIG__ && window.__RUNTIME_CONFIG__.GOOGLE_MAPS_API_KEY,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim() !== '') {
-      return candidate.trim();
-    }
-  }
-
-  const envApiKey = await loadApiKeyFromDotEnv();
-  if (typeof envApiKey === 'string' && envApiKey.trim() !== '') {
-    return envApiKey.trim();
-  }
-
-  return GOOGLE_MAPS_API_KEY;
-}
-
-/**
- * .env ファイルからGoogle Maps APIキーを読み込む
- * @returns {Promise<string>} 読み込んだAPIキー（未取得時は空文字）
- */
-async function loadApiKeyFromDotEnv() {
-  try {
-    const response = await fetch('.env', { cache: 'no-store' });
-    if (!response.ok) {
-      console.warn('.env の取得に失敗しました。', { status: response.status });
-      return '';
-    }
-
-    const envText = await response.text();
-    const apiKey = parseApiKeyFromEnvText(envText, 'GOOGLE_MAPS_API_KEY');
-    if (apiKey) {
-      console.info('.env からAPIキーを読み込みました。');
-    }
-    return apiKey;
-  } catch (error) {
-    console.warn('.env からのAPIキー読み込みに失敗しました。', error);
-    return '';
-  }
-}
-
-/**
- * .env テキストから指定キーの値を抽出する
- * @param {string} envText - .env の全文
- * @param {string} keyName - 抽出対象キー名
- * @returns {string} 抽出した値（未取得時は空文字）
- */
-function parseApiKeyFromEnvText(envText, keyName) {
-  const lines = envText.split(/\r?\n/);
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (line === '' || line.startsWith('#') || !line.includes('=')) {
-      continue;
-    }
-
-    const separatorIndex = line.indexOf('=');
-    const key = line.slice(0, separatorIndex).trim();
-    if (key !== keyName) {
-      continue;
-    }
-
-    const value = line.slice(separatorIndex + 1).trim().replace(/^['"]|['"]$/g, '');
-    return value;
-  }
-
-  return '';
-}
-
-/**
- * APIキーが利用可能か判定する
- * @param {string} apiKey - 判定対象のAPIキー
- * @returns {boolean} 利用可能ならtrue
- */
-function isApiKeyReady(apiKey) {
-  return apiKey !== '' && apiKey !== 'YOUR_API_KEY';
 }
 
 /**
